@@ -154,7 +154,7 @@ int setup(int port)
     // connect()
     addr_client.sin_family = AF_INET;
     addr_client.sin_port = htons(port);
-    addr_client.sin_addr.s_addr = htonl(INADDR_ANY);
+    addr_client.sin_addr.s_addr = inet_addr(ip);
     bzero(&(addr_client.sin_zero), 8);
     if (connect(socket_id, (struct sockaddr *) &addr_client, sizeof(struct sockaddr)) == -1)
     {

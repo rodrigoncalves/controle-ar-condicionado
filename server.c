@@ -79,8 +79,9 @@ int setup(int port)
     // bind()
     addr_server.sin_family = AF_INET;
     addr_server.sin_port = htons(port);
-    addr_server.sin_addr.s_addr = htonl(INADDR_ANY);
+    addr_server.sin_addr.s_addr = inet_addr(ip);
     bzero(&(addr_server.sin_zero), 8);
+
     if (bind(socket_id, (struct sockaddr *) &addr_server, sizeof(struct sockaddr)) == -1)
     {
         close(socket_id);
@@ -117,14 +118,14 @@ void *recv_request_temp()
 
         if (recv(client_temp_d, &length, sizeof(length), 0) == 0)
         {
-            perror("Error executing recv()");
+            perror("Nothing received");
             continue;
         }
 
         text = (char *) malloc(length);
         if (recv(client_temp_d, text, length, 0) == 0)
         {
-            perror("Error executing recv()");
+            perror("Nothing received");
             continue;
         }
 
