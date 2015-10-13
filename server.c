@@ -20,7 +20,7 @@ int setup(int);
 void *recv_request_temp();
 void *recv_request_key();
 
-char *ip = "192.168.0.109";
+char *ip = "127.0.0.1";
 int server_temp_d = 0;
 int server_key_d = 0;
 int client_temp_d = 0;
@@ -79,7 +79,7 @@ int setup(int port)
     // bind()
     addr_server.sin_family = AF_INET;
     addr_server.sin_port = htons(port);
-    addr_server.sin_addr.s_addr = inet_addr(ip);
+    addr_server.sin_addr.s_addr = htonl(INADDR_ANY);
     bzero(&(addr_server.sin_zero), 8);
     if (bind(socket_id, (struct sockaddr *) &addr_server, sizeof(struct sockaddr)) == -1)
     {
@@ -195,8 +195,8 @@ void *recv_request_key()
         {
             printf("Server: turn key air OFF.\n");
 
-            bool key = false;
-            if (send(client_key_d, &key, sizeof(key), 0) == -1)
+            bool result = false;
+            if (send(client_key_d, &result, sizeof(result), 0) == -1)
             {
                 close(client_key_d);
                 perror("Error sending key air");
