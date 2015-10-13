@@ -1,20 +1,30 @@
+#include <errno.h>
+#include <netinet/in.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <sys/un.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #define PORT_TEMP 8080
 #define PORT_KEY 3000
 
 void quit();
-int server(int);
+int setup(int);
+void *recv_request_temp();
+void *recv_request_key();
 
 char *ip = "192.168.0.109";
-int temp_d = 0;
-int key_d = 0;
+int server_temp_d = 0;
+int server_key_d = 0;
+int client_temp_d = 0;
+int client_key_d = 0;
 
 int main(int argc, char *argv[])
 {
@@ -23,37 +33,25 @@ int main(int argc, char *argv[])
     if (argc == 2) ip = argv[1];
     else if (argc > 2) errx(1, "Invalid argument");
 
+    printf("Running at %s\n", ip);
+
     pthread_t temp_thread;
     pthread_t key_thread;
 
-    temp_d = setup(PORT_TEMP);
-    key_d = setup(PORT_KEY);
+    server_temp_d = setup(PORT_TEMP);
+    server_key_d = setup(PORT_KEY);
 
-    if (pthread_create(&temp_thread, NULL, request_temp, NULL))
+    if (pthread_create(&temp_thread, NULL, recv_request_temp, NULL))
         errx(1, "Error creating thread");
-    if (pthread_create(&key_thread, NULL, request_key, NULL))
+    if (pthread_create(&key_thread, NULL, recv_request_key, NULL))
         errx(1, "Error creating thread");
 
-    pthread_join(&temp_thread, NULL);
-    pthread_join(&key_thread, NULL);
+    pthread_join(temp_thread, NULL);
+    pthread_join(key_thread, NULL);
 
     unlink(ip);
-    close(temp_d);
-    close(key_d);
-
-    int client_request_termination = 0;
-    // accept()
-    while (!client_request_termination)
-    {
-        struct sockaddr client;
-        int client_socket_id;
-        socklen_t client_len;
-
-        client_socket_id = accept(socket_id, &client, &client_len);
-
-        client_request_termination = server(client_socket_id);
-        close(client_socket_id);
-    }
+    close(server_temp_d);
+    close(server_key_d);
 
     return 0;
 }
@@ -62,8 +60,10 @@ void quit()
 {
     printf("\nBye\n");
 
-    if (temp_d) close(temp_d);
-    if (key_d) close(key_d);
+    if (server_temp_d) close(server_temp_d);
+    if (server_key_d) close(server_key_d);
+    if (client_temp_d) close(client_temp_d);
+    if (client_key_d) close(client_key_d);
     exit(0);
 }
 
@@ -77,11 +77,11 @@ int setup(int port)
         errx(1, "Error creating socket");
 
     // bind()
-    addr_server.sa_family = AF_INET;
+    addr_server.sin_family = AF_INET;
     addr_server.sin_port = htons(port);
     addr_server.sin_addr.s_addr = inet_addr(ip);
     bzero(&(addr_server.sin_zero), 8);
-    if (bind(socket_id, (struct sockadrr *) &addr_server, sizeof(struct sockaddr)) == -1)
+    if (bind(socket_id, (struct sockaddr *) &addr_server, sizeof(struct sockaddr)) == -1)
     {
         close(socket_id);
         errx(1, "Error executing bind()");
@@ -97,24 +97,114 @@ int setup(int port)
     return socket_id;
 }
 
-int server(int client_socket)
+void *recv_request_temp()
 {
-    // read()
+    // accept()
     while (1)
     {
+        struct sockaddr addr_client;
+        socklen_t client_len;
+
+        client_temp_d = accept(server_temp_d, (struct sockaddr *) &addr_client, &client_len);
+        if (client_temp_d < 0)
+        {
+            perror("Error executing accept()");
+            continue;
+        }
+
         int length;
         char *text;
-        if (read(client_socket, &length, sizeof(length)) == 0)
-            return 0;
-        text = (char *) malloc(length);
-        read(client_socket, text, length);
-        fprintf(stderr, "%s\n", text);
-        if (!strcmp(text, "quit"))
+
+        if (recv(client_temp_d, &length, sizeof(length), 0) == 0)
         {
-            free(text);
-            return 1;
+            perror("Error executing recv()");
+            continue;
+        }
+
+        text = (char *) malloc(length);
+        if (recv(client_temp_d, text, length, 0) == 0)
+        {
+            perror("Error executing recv()");
+            continue;
+        }
+
+        if (strcmp("get_temperature", text) == 0)
+        {
+            printf("Server: temperature request received.\n");
+
+            // float temperature = get_temp_uart();
+            float temperature = 25.0;
+            if (send(client_temp_d, &temperature, sizeof(temperature), 0) == -1)
+            {
+                close(client_temp_d);
+                perror("Error sending temperature");
+                continue;
+            }
         }
 
         free(text);
+        close(client_temp_d);
+    }
+
+}
+
+void *recv_request_key()
+{
+    // accept()
+    while (1)
+    {
+        struct sockaddr_in addr_client;
+        socklen_t client_len;
+
+        client_key_d = accept(server_key_d, (struct sockaddr *) &addr_client, &client_len);
+        if (client_key_d < 0)
+        {
+            perror("Error executing accept()");
+            continue;
+        }
+
+        int length;
+        char *text;
+
+        if (recv(client_key_d, &length, sizeof(length), 0) == 0)
+        {
+            perror("Error executing recv()");
+            continue;
+        }
+
+        text = (char *) malloc(length);
+        if (recv(client_key_d, text, length, 0) == 0)
+        {
+            perror("Error executing recv()");
+            continue;
+        }
+
+        if (strcmp("on", text) == 0)
+        {
+            printf("Server: turn key air ON.\n");
+
+            bool key = true;
+            if (send(client_key_d, &key, sizeof(key), 0) == -1)
+            {
+                close(client_key_d);
+                perror("Error sending temperature");
+                continue;
+            }
+        }
+        else if (strcmp("off", text) == 0)
+        {
+            printf("Server: turn key air OFF.\n");
+
+            bool key = false;
+            if (send(client_key_d, &key, sizeof(key), 0) == -1)
+            {
+                close(client_key_d);
+                perror("Error sending key air");
+                continue;
+            }
+        }
+
+        free(text);
+        close(client_key_d);
     }
 }
