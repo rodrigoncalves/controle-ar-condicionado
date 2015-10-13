@@ -73,7 +73,7 @@ int setup(int port)
     struct sockaddr_in addr_server;
 
     // socket()
-    if (socket_id = socket(AF_INET, SOCK_STREAM, 0) == -1)
+    if ((socket_id = socket(AF_INET, SOCK_STREAM, 0)) == -1)
         errx(1, "Error creating socket");
 
     // bind()
