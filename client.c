@@ -25,8 +25,8 @@ bool air_conditioning(bool status);
 static pthread_mutex_t mutex_lock;
 volatile float temperature = 0;
 char *ip = "127.0.0.1";
-int temp_d = 0;
-int key_d = 0;
+int socket_temp_d = 0;
+int socket_key_d = 0;
 
 int main(int argc, char *argv[])
 {
@@ -52,9 +52,9 @@ int main(int argc, char *argv[])
     printf("(1) Turn on\n");
     printf("(2) Turn off\n");
     printf("(3) - Exit\n");
-    printf("\n\nChoose an option: ");
+    printf("\nChoose an option: ");
 
-    while(1)
+    while (1)
     {
         int option;
         scanf("%d", &option);
@@ -112,7 +112,6 @@ int main(int argc, char *argv[])
     pthread_join(temp_thread, NULL);
     pthread_mutex_destroy(&mutex_lock);
 
-
     return 0;
 }
 
@@ -120,8 +119,8 @@ void quit()
 {
     // close()
     printf("\nBye\n");
-    if (temp_d) close(temp_d);
-    if (key_d) close(key_d);
+    if (socket_temp_d) close(socket_temp_d);
+    if (socket_key_d) close(socket_key_d);
     pthread_mutex_destroy(&mutex_lock);
     exit(0);
 }
@@ -130,7 +129,7 @@ void *monitoring_temperature()
 {
         while (1)
     {
-        temp_d = setup(PORT_TEMP);
+        socket_temp_d = setup(PORT_TEMP);
 
         float temp = get_temperature();
         pthread_mutex_lock(&mutex_lock);
@@ -148,7 +147,7 @@ int setup(int port)
     struct sockaddr_in addr_client;
 
     // socket()
-    if (socket_id = socket(AF_INET, SOCK_STREAM, 0) == -1)
+    if ((socket_id = socket(AF_INET, SOCK_STREAM, 0)) == -1)
         errx(1, "Error creating socket");
 
     // connect()
@@ -170,22 +169,22 @@ float get_temperature()
     // write()
     char *msg = "get_temperature";
     int length = strlen(msg) + 1;
-    if (write(temp_d, &length, sizeof(length)) == -1)
+    if (write(socket_temp_d, &length, sizeof(length)) == -1)
     {
-        close(temp_d);
+        close(socket_temp_d);
         errx(1, "Error sending message to server");
     }
 
-    if (write(temp_d, msg, length) == -1)
+    if (write(socket_temp_d, msg, length) == -1)
     {
-        close(temp_d);
+        close(socket_temp_d);
         errx(1, "Error sending message to server");
     }
 
     float temp = 0.0;
-    // if (recv(temp_d, &temp, sizeof(temp), 0) == -1)
+    // if (recv(socket_temp_d, &temp, sizeof(temp), 0) == -1)
     // {
-    //     close(temp_d);
+    //     close(socket_temp_d);
     //     errx(1, "Error receiving message");
     // }
 
@@ -194,29 +193,29 @@ float get_temperature()
 
 bool air_conditioning(bool status)
 {
-    key_d = setup(PORT_KEY);
+    socket_key_d = setup(PORT_KEY);
     char *msg;
 
     status ? strcpy(msg, "on") : strcpy(msg, "off");
 
     int length = strlen(msg) + 1;
 
-    if (send(key_d, &length, sizeof(length), 0) == -1)
+    if (send(socket_key_d, &length, sizeof(length), 0) == -1)
     {
-        close(key_d);
+        close(socket_key_d);
         errx(1, "Error sending message to server");
     }
 
-    if (send(key_d, msg, length, 0) == -1)
+    if (send(socket_key_d, msg, length, 0) == -1)
     {
-        close(key_d);
+        close(socket_key_d);
         errx(1, "Error sending message to server");
     }
 
     bool result;
-    if (recv(key_d, &result, sizeof(result), 0) == -1)
+    if (recv(socket_key_d, &result, sizeof(result), 0) == -1)
     {
-        close(key_d);
+        close(socket_key_d);
         errx(1, "Error receiving message");
     }
 
