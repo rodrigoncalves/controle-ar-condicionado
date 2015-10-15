@@ -202,7 +202,7 @@ void *recv_request_key()
         if (send(client_key_d, &key, sizeof(key), 0) == -1)
         {
             close(client_key_d);
-            Log("Error: change air state");
+            Log("Error: failed");
             continue;
         }
 
@@ -248,7 +248,6 @@ float get_temp_uart()
     float temp;
     char buffer_temp[4];
     int m = read(uart_d, (void *) buffer_temp, 4);
-
 
     if (m < 0)
     {
@@ -332,9 +331,10 @@ void* receive_request_air()
         close(client_key_d);
     }
 }
+
 /*
-*   Envia o novo estado para o ar condicionado
-*   Return: True se a operacao foi executada com sucesso, E False, caso contrario
+*   Sends the new state to ar conditioning
+*   Return: True if the operation was executed with success. False, otherwise
 */
 bool change_air_state(bool state)
 {
@@ -370,7 +370,7 @@ bool change_air_state(bool state)
     if (n < 0)
     {
         close(uart_descriptor);
-        Log("Erro ao escrever na uart");
+        Log("Error: write on uart");
         return false;
     }
 
@@ -378,19 +378,19 @@ bool change_air_state(bool state)
 
     char buffer_result;
 
-    int m = 0;
-    // int m = read(uart_descriptor, (void*) &buffer_result, 1);
+    // int m = 0;
+    int m = read(uart_descriptor, (void*) &buffer_result, 1);
 
     bool result;
     if (m <= 0)
     {
-        Log("Erro ao ler a resposta do ar condicionado");
+        Log("Error: read feedback");
         result = false;
     }
 
     if (buffer_result != 0xA1)
     {
-        Log("O arduino recebeu um comando desconhecido");
+        Log("Arduino received unknown command");
         result = false;
     }
     else

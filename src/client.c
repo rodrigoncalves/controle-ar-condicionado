@@ -18,7 +18,6 @@
 void quit();
 void menu();
 float get_temperature();
-void print_temperature(float);
 bool air_conditioning(int);
 
 volatile float temperature = 0;
@@ -36,10 +35,6 @@ int main(int argc, char *argv[])
 
     if (pthread_mutex_init(&mutex_lock, NULL))
         errx(1, "Error creating mutex");
-
-    // pthread_t temperature_thread;
-    // if (pthread_create(&temperature_thread, NULL, monitoring_temperature, NULL))
-    //     errx(1, "Error creating thread");
 
     menu();
     printf("-> ");
@@ -106,20 +101,6 @@ void menu()
     printf("(9) Sair\n");
 }
 
-// void *monitoring_temperature()
-// {
-//     while (1)
-//     {
-//         socket_temp_d = setup(PORT_TEMP);
-
-//         float temp = get_temperature();
-//         pthread_mutex_lock(&mutex_lock);
-//         temperature = temp;
-//         pthread_mutex_unlock(&mutex_lock);
-//         sleep(2);
-//     }
-// }
-
 int setup(int port)
 {
     int socket_id;
@@ -170,13 +151,6 @@ float get_temperature()
     }
 
     return temp;
-}
-
-void print_temperature(float temperature)
-{
-    printf("\033[%d;%dfTemperatura: %.1f C\n", 3, 40, temperature);
-    printf("\033[%d;%df\n", 8, 8);
-    fflush(stdout);
 }
 
 bool air_conditioning(int option)
