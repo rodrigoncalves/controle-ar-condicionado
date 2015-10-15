@@ -16,6 +16,7 @@
 #define PORT_KEY 3000
 
 void quit();
+void menu();
 void *monitoring_temperature();
 float get_temperature();
 bool air_conditioning(int);
@@ -34,28 +35,22 @@ int main(int argc, char *argv[])
     else if (argc > 2) errx(1, "Invalid argument");
 
     // pthread_t time_thread;
-
     // if (pthread_create(&time_thread, NULL, running_time, NULL))
     //     errx(1, "Error creating thread");
 
-    // pthread_t temperature_thread;
     if (pthread_mutex_init(&mutex_lock, NULL))
         errx(1, "Error creating mutex");
 
-    // if (pthread_create(&temperature_thread, NULL, monitoring_temperature, NULL))
-    //     errx(1, "Error creating thread");
+    pthread_t temperature_thread;
+    if (pthread_create(&temperature_thread, NULL, monitoring_temperature, NULL))
+        errx(1, "Error creating thread");
 
     // system("clear");
 
     // struct winsize w;
     // ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
     // gotoxy(w.ws_col / 2 - 12, 0);
-    printf("Controle de ar condicionado");
-    
-    printf("\n\nEscolha uma opção:\n");
-    printf("(1) Ligar\n");
-    printf("(2) Desligar\n");
-    printf("(3) Sair\n");
+    menu();
     printf("-> ");
 
     while (1)
@@ -65,6 +60,11 @@ int main(int argc, char *argv[])
 
         switch (option)
         {
+            case 0:
+                system("clear");
+                menu();
+                break;
+
             case 1:
             case 2:
                 if (air_conditioning(option))
@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
                 quit();
                 break;
             default:
-                printf("Invalid option\n");
+                printf("Opcao invalida\n");
         }
 
     //     gotoxy(0,8);
@@ -130,6 +130,15 @@ void quit()
     exit(0);
 }
 
+void menu()
+{
+    printf("Controle de ar condicionado");
+    printf("\n\nEscolha uma opcao:\n");
+    printf("(1) Ligar\n");
+    printf("(2) Desligar\n");
+    printf("(3) Sair\n");
+}
+
 void *monitoring_temperature()
 {
     while (1)
@@ -146,9 +155,10 @@ void *monitoring_temperature()
         // save_position();
         // gotoxy(w.ws_col - 23, 0);
 
-        printf("Temperature: %.2f\n", temperature);
+        printf("\t\t\t\tTemperatura: %.1f C\n", temperature);
+        printf("->");
         // reset_position();
-        sleep(2);
+        sleep(5);
     }
 }
 
