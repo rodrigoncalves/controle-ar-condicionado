@@ -19,6 +19,7 @@ void quit();
 void menu();
 void *monitoring_temperature();
 float get_temperature();
+void print_temperature(float);
 bool air_conditioning(int);
 
 volatile float temperature = 0;
@@ -34,10 +35,6 @@ int main(int argc, char *argv[])
     if (argc == 2) ip = argv[1];
     else if (argc > 2) errx(1, "Invalid argument");
 
-    // pthread_t time_thread;
-    // if (pthread_create(&time_thread, NULL, running_time, NULL))
-    //     errx(1, "Error creating thread");
-
     if (pthread_mutex_init(&mutex_lock, NULL))
         errx(1, "Error creating mutex");
 
@@ -45,11 +42,8 @@ int main(int argc, char *argv[])
     if (pthread_create(&temperature_thread, NULL, monitoring_temperature, NULL))
         errx(1, "Error creating thread");
 
-    // system("clear");
+    system("clear");
 
-    // struct winsize w;
-    // ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-    // gotoxy(w.ws_col / 2 - 12, 0);
     menu();
     printf("-> ");
 
@@ -66,40 +60,17 @@ int main(int argc, char *argv[])
                 break;
 
             case 1:
+                if (air_conditioning(option))
+                    printf("Ar condicionado foi ligado.\n");
+                else
+                    printf("Erro ao ligar o ar condicionado.\n");
+                break;
             case 2:
                 if (air_conditioning(option))
-                {
-                    printf("Ar condicionado foi ligado.\n");
-    //                 ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-    //                 save_position();
-    //                 gotoxy(w.ws_col / 2 + 5, 0);
-    //                 printf("ON  ");
-    //                 reset_position();
-                }
-                else
-                {
                     printf("Ar condicionado foi desligado.\n");
-                }
-
-    //             getchar();
-    //             getchar();
+                else
+                    printf("Erro ao desligar o ar condicionado.");
                 break;
-            // case 2:
-                // if (air_conditioning(option))
-                // {
-    //                 printf("Air conditioning was turned OFF. Press ENTER to continue.");
-    //                 ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-    //                 save_position();
-    //                 gotoxy(w.ws_col / 2 + 5, 0);
-    //                 printf("OFF");
-    //                 reset_position();
-                // }
-    //             else
-    //                 printf("Error turning air conditioning OFF. Press ENTER to retry");
-
-    //             getchar();
-    //             getchar();
-                // break;
             case 3:
                 quit();
                 break;
@@ -107,14 +78,9 @@ int main(int argc, char *argv[])
                 printf("Opcao invalida\n");
         }
 
-    //     gotoxy(0,8);
-    //     printf("                                                                                       ");
-    //     gotoxy(0,7);
         printf("-> ");
-    //     gotoxy(3,7);
     }
 
-    // pthread_join(temperature_thread, NULL);
     pthread_mutex_destroy(&mutex_lock);
 
     return 0;
@@ -150,15 +116,8 @@ void *monitoring_temperature()
         temperature = temp;
         pthread_mutex_unlock(&mutex_lock);
 
-        // struct winsize w;
-        // ioctl(STDOUT_FILENO, TIOCGWINSZ, &w); // retorna em w o tamanho da janela do terminal
-        // save_position();
-        // gotoxy(w.ws_col - 23, 0);
-
-        printf("\t\t\t\tTemperatura: %.1f C\n", temperature);
-        printf("->");
-        // reset_position();
-        sleep(5);
+        print_temperature(temperature);
+        sleep(2);
     }
 }
 
@@ -210,6 +169,13 @@ float get_temperature()
     }
 
     return temp;
+}
+
+void print_temperature(float temperature)
+{
+    printf("\033[%d;%dfTemperatura: %.1f C\n", 3, 40, temperature);
+    printf("\033[%d;%df\n", 8, 8);
+    fflush(stdout);
 }
 
 bool air_conditioning(int option)
