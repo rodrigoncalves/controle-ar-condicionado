@@ -1,3 +1,9 @@
 all:
-	gcc -o client.out client.c -lpthread -g
-	gcc -o server.out server.c -lpthread -g
+	@make server
+	@make client
+
+server:
+	gcc -o server.out src/server.c -lpthread -g
+
+client:
+	gcc -o client.out src/client.c -lpthread -g
