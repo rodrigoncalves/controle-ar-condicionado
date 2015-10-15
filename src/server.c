@@ -12,6 +12,8 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+// #include "file.c"
+
 #define PORT_TEMP 8080
 #define PORT_KEY 3000
 
@@ -109,7 +111,7 @@ void *recv_request_temp()
         client_temp_d = accept(server_temp_d, (struct sockaddr *) &addr_client, &client_len);
         if (client_temp_d < 0)
         {
-            perror("Error executing accept()");
+            printf("Error executing accept()\n");
             continue;
         }
 
@@ -118,14 +120,14 @@ void *recv_request_temp()
 
         if (recv(client_temp_d, &length, sizeof(length), 0) == 0)
         {
-            perror("Nothing received");
+            printf("Nothing received\n");
             continue;
         }
 
         text = (char *) malloc(length);
         if (recv(client_temp_d, text, length, 0) == 0)
         {
-            perror("Nothing received");
+            printf("Nothing received\n");
             continue;
         }
 
@@ -138,7 +140,7 @@ void *recv_request_temp()
             if (send(client_temp_d, &temperature, sizeof(temperature), 0) == -1)
             {
                 close(client_temp_d);
-                perror("Error sending temperature");
+                printf("Error sending temperature\n");
                 continue;
             }
         }
@@ -160,7 +162,7 @@ void *recv_request_key()
         client_key_d = accept(server_key_d, (struct sockaddr *) &addr_client, &client_len);
         if (client_key_d < 0)
         {
-            perror("Error executing accept()");
+            printf("Error executing accept()\n");
             continue;
         }
 
@@ -169,14 +171,14 @@ void *recv_request_key()
 
         if (recv(client_key_d, &length, sizeof(length), 0) == 0)
         {
-            perror("Error executing recv()");
+            printf("Nothing received\n");
             continue;
         }
 
         text = (char *) malloc(length);
         if (recv(client_key_d, text, length, 0) == 0)
         {
-            perror("Error executing recv()");
+            printf("Nothing received\n");
             continue;
         }
 
@@ -188,7 +190,7 @@ void *recv_request_key()
             if (send(client_key_d, &key, sizeof(key), 0) == -1)
             {
                 close(client_key_d);
-                perror("Error sending temperature");
+                printf("Error sending temperature\n");
                 continue;
             }
         }
@@ -200,7 +202,7 @@ void *recv_request_key()
             if (send(client_key_d, &result, sizeof(result), 0) == -1)
             {
                 close(client_key_d);
-                perror("Error sending key air");
+                printf("Error sending key air\n");
                 continue;
             }
         }

@@ -12,18 +12,16 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "screen.c"
-
 #define PORT_TEMP 8080
 #define PORT_KEY 3000
 
 void quit();
 void *monitoring_temperature();
 float get_temperature();
-bool air_conditioning(bool status);
+bool air_conditioning(int);
 
-static pthread_mutex_t mutex_lock;
 volatile float temperature = 0;
+static pthread_mutex_t mutex_lock;
 char *ip = "127.0.0.1";
 int socket_temp_d = 0;
 int socket_key_d = 0;
@@ -35,81 +33,88 @@ int main(int argc, char *argv[])
     if (argc == 2) ip = argv[1];
     else if (argc > 2) errx(1, "Invalid argument");
 
-    pthread_t temp_thread;
+    // pthread_t time_thread;
+
+    // if (pthread_create(&time_thread, NULL, running_time, NULL))
+    //     errx(1, "Error creating thread");
+
+    // pthread_t temperature_thread;
     if (pthread_mutex_init(&mutex_lock, NULL))
         errx(1, "Error creating mutex");
 
-    if (pthread_create(&temp_thread, NULL, monitoring_temperature, NULL))
-        errx(1, "Error creating thread");
+    // if (pthread_create(&temperature_thread, NULL, monitoring_temperature, NULL))
+    //     errx(1, "Error creating thread");
 
-    system("clear");
+    // system("clear");
 
-    struct winsize w;
-    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-    gotoxy(w.ws_col / 2 - 12, 0);
-    printf("Air conditioning: OFF");
+    // struct winsize w;
+    // ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+    // gotoxy(w.ws_col / 2 - 12, 0);
+    printf("Controle de ar condicionado");
     
-    printf("(1) Turn on\n");
-    printf("(2) Turn off\n");
-    printf("(3) - Exit\n");
-    printf("\nChoose an option: ");
+    printf("\n\nEscolha uma opção:\n");
+    printf("(1) Ligar\n");
+    printf("(2) Desligar\n");
+    printf("(3) Sair\n");
+    printf("-> ");
 
     while (1)
     {
         int option;
         scanf("%d", &option);
 
-        switch(option)
+        switch (option)
         {
             case 1:
-                if (air_conditioning(true))
-                {
-                    printf("Air conditioning was turned ON. Press ENTER to continue.");
-                    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-                    save_position();
-                    gotoxy(w.ws_col / 2 + 5, 0);
-                    printf("ON ");
-                    reset_position();
-                }
-                else
-                    printf("Error turning air conditioning ON. Press ENTER to retry");
-
-                getchar();
-                getchar();
-                break;
             case 2:
-                if (air_conditioning(false))
+                if (air_conditioning(option))
                 {
-                    printf("Air conditioning was turned OFF. Press ENTER to continue.");
-                    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-                    save_position();
-                    gotoxy(w.ws_col / 2 + 5, 0);
-                    printf("OFF");
-                    reset_position();
+                    printf("Ar condicionado foi ligado.\n");
+    //                 ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+    //                 save_position();
+    //                 gotoxy(w.ws_col / 2 + 5, 0);
+    //                 printf("ON  ");
+    //                 reset_position();
                 }
                 else
-                    printf("Error turning air conditioning OFF. Press ENTER to retry");
+                {
+                    printf("Ar condicionado foi desligado.\n");
+                }
 
-                getchar();
-                getchar();
+    //             getchar();
+    //             getchar();
                 break;
+            // case 2:
+                // if (air_conditioning(option))
+                // {
+    //                 printf("Air conditioning was turned OFF. Press ENTER to continue.");
+    //                 ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+    //                 save_position();
+    //                 gotoxy(w.ws_col / 2 + 5, 0);
+    //                 printf("OFF");
+    //                 reset_position();
+                // }
+    //             else
+    //                 printf("Error turning air conditioning OFF. Press ENTER to retry");
+
+    //             getchar();
+    //             getchar();
+                // break;
             case 3:
                 quit();
                 break;
             default:
-                printf("Invalid option");
-                getchar();
-                getchar();
+                printf("Invalid option\n");
         }
 
-        gotoxy(0,8);
-        printf("                                                                                       ");
-        gotoxy(0,7);
-        printf("Choose an option: ");
-        gotoxy(3,7);
+    //     gotoxy(0,8);
+    //     printf("                                                                                       ");
+    //     gotoxy(0,7);
+        printf("-> ");
+    //     gotoxy(3,7);
     }
 
-    pthread_join(temp_thread, NULL);
+    // pthread_join(temperature_thread, NULL);
     pthread_mutex_destroy(&mutex_lock);
 
     return 0;
@@ -127,7 +132,7 @@ void quit()
 
 void *monitoring_temperature()
 {
-        while (1)
+    while (1)
     {
         socket_temp_d = setup(PORT_TEMP);
 
@@ -136,7 +141,13 @@ void *monitoring_temperature()
         temperature = temp;
         pthread_mutex_unlock(&mutex_lock);
 
+        // struct winsize w;
+        // ioctl(STDOUT_FILENO, TIOCGWINSZ, &w); // retorna em w o tamanho da janela do terminal
+        // save_position();
+        // gotoxy(w.ws_col - 23, 0);
+
         printf("Temperature: %.2f\n", temperature);
+        // reset_position();
         sleep(2);
     }
 }
@@ -181,20 +192,21 @@ float get_temperature()
         errx(1, "Error sending message to server");
     }
 
-    float temp = 0.0;
-    // if (recv(socket_temp_d, &temp, sizeof(temp), 0) == -1)
-    // {
-    //     close(socket_temp_d);
-    //     errx(1, "Error receiving message");
-    // }
+    float temp;
+    if (recv(socket_temp_d, &temp, sizeof(temp), 0) == -1)
+    {
+        close(socket_temp_d);
+        errx(1, "Error receiving message");
+    }
 
     return temp;
 }
 
-bool air_conditioning(bool status)
+bool air_conditioning(int option)
 {
+    bool status = option % 2;
     socket_key_d = setup(PORT_KEY);
-    char *msg;
+    char msg[4];
 
     status ? strcpy(msg, "on") : strcpy(msg, "off");
 
