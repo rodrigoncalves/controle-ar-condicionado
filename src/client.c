@@ -17,7 +17,6 @@
 
 void quit();
 void menu();
-void *monitoring_temperature();
 float get_temperature();
 void print_temperature(float);
 bool air_conditioning(int);
@@ -38,11 +37,9 @@ int main(int argc, char *argv[])
     if (pthread_mutex_init(&mutex_lock, NULL))
         errx(1, "Error creating mutex");
 
-    pthread_t temperature_thread;
-    if (pthread_create(&temperature_thread, NULL, monitoring_temperature, NULL))
-        errx(1, "Error creating thread");
-
-    system("clear");
+    // pthread_t temperature_thread;
+    // if (pthread_create(&temperature_thread, NULL, monitoring_temperature, NULL))
+    //     errx(1, "Error creating thread");
 
     menu();
     printf("-> ");
@@ -58,7 +55,6 @@ int main(int argc, char *argv[])
                 system("clear");
                 menu();
                 break;
-
             case 1:
                 if (air_conditioning(option))
                     printf("Ar condicionado foi ligado.\n");
@@ -66,12 +62,16 @@ int main(int argc, char *argv[])
                     printf("Erro ao ligar o ar condicionado.\n");
                 break;
             case 2:
-                if (air_conditioning(option))
+                if (!air_conditioning(option))
                     printf("Ar condicionado foi desligado.\n");
                 else
-                    printf("Erro ao desligar o ar condicionado.");
+                    printf("Erro ao desligar o ar condicionado.\n");
                 break;
             case 3:
+                temperature = get_temperature();
+                printf("Temperatura %.2f C\n", temperature);
+                break;
+            case 9:
                 quit();
                 break;
             default:
@@ -102,24 +102,23 @@ void menu()
     printf("\n\nEscolha uma opcao:\n");
     printf("(1) Ligar\n");
     printf("(2) Desligar\n");
-    printf("(3) Sair\n");
+    printf("(3) Solicitar temperatura\n");
+    printf("(9) Sair\n");
 }
 
-void *monitoring_temperature()
-{
-    while (1)
-    {
-        socket_temp_d = setup(PORT_TEMP);
+// void *monitoring_temperature()
+// {
+//     while (1)
+//     {
+//         socket_temp_d = setup(PORT_TEMP);
 
-        float temp = get_temperature();
-        pthread_mutex_lock(&mutex_lock);
-        temperature = temp;
-        pthread_mutex_unlock(&mutex_lock);
-
-        print_temperature(temperature);
-        sleep(2);
-    }
-}
+//         float temp = get_temperature();
+//         pthread_mutex_lock(&mutex_lock);
+//         temperature = temp;
+//         pthread_mutex_unlock(&mutex_lock);
+//         sleep(2);
+//     }
+// }
 
 int setup(int port)
 {
@@ -146,6 +145,8 @@ int setup(int port)
 
 float get_temperature()
 {
+    socket_temp_d = setup(PORT_TEMP);
+
     // write()
     char *msg = "get_temperature";
     int length = strlen(msg) + 1;
