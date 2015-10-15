@@ -18,7 +18,7 @@
 void quit();
 void menu();
 float get_temperature();
-bool air_conditioning(int);
+bool set_status_key(int);
 
 volatile float temperature = 0;
 static pthread_mutex_t mutex_lock;
@@ -51,13 +51,13 @@ int main(int argc, char *argv[])
                 menu();
                 break;
             case 1:
-                if (air_conditioning(option))
+                if (set_status_key(option))
                     printf("Ar condicionado foi ligado.\n");
                 else
                     printf("Erro ao ligar o ar condicionado.\n");
                 break;
             case 2:
-                if (!air_conditioning(option))
+                if (set_status_key(option))
                     printf("Ar condicionado foi desligado.\n");
                 else
                     printf("Erro ao desligar o ar condicionado.\n");
@@ -153,14 +153,13 @@ float get_temperature()
     return temp;
 }
 
-bool air_conditioning(int option)
+bool set_status_key(int option)
 {
     bool status = option % 2;
     socket_key_d = setup(PORT_KEY);
     char msg[4];
 
     status ? strcpy(msg, "on") : strcpy(msg, "off");
-
     int length = strlen(msg) + 1;
 
     if (send(socket_key_d, &length, sizeof(length), 0) == -1)
