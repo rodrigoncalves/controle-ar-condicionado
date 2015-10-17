@@ -7,3 +7,6 @@ server:
 
 client:
 	gcc -o client.out src/client.c -Iinclude -lpthread -g
+
+clear:
+	rm -f *.out *.log
