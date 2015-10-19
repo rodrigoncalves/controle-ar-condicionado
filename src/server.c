@@ -219,7 +219,7 @@ float get_temp_uart()
     uart_d = open("/dev/ttyAMA0", O_RDWR | O_NOCTTY | O_NDELAY);
     if (uart_d == -1)
     {
-        Log("Error: failed to open file ¬dev/ttyAMA0");
+        Log("Error: failed to open file /dev/ttyAMA0");
         return -273.15;
     }
 
